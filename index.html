@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin IPs — SPA</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+      :root{
+        --bg:#0B121D;--panel:#101B2C;--panel-2:#152238;--border:#26344E;
+        --text:#E9EFF9;--muted:#8CA0BE;--accent:#4C8DFF;--ink:var(--text);
+        --free:#25C193;--occupied:#E2543F;--nodata:#3E4F6B;
+        --screw:#223142
+      }
+      html,body{height:100%;}
+      body{margin:0;background:linear-gradient(180deg,var(--bg),#07101a);color:var(--text);font-family:'IBM Plex Sans',system-ui,Segoe UI,Arial;}
+      .container{max-width:1200px;margin:18px auto;padding:18px}
+      /* Plate */
+      .plate{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--border);padding:12px 16px;border-radius:8px;position:relative;display:flex;align-items:center;gap:14px}
+      .plate:before,.plate:after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:var(--screw);top:8px}
+      .plate:before{left:8px}
+      .plate:after{right:8px}
+      .title{font-family:'IBM Plex Mono';font-weight:600;font-size:18px}
+      .subtitle{color:var(--muted);font-size:13px}
+
+      .topbar{display:flex;gap:12px;margin-top:12px;align-items:flex-start}
+      .upload{flex:0 0 420px}
+      .upload .drop{border:1px dashed var(--border);padding:12px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);position:relative}
+      /* file input covers entire drop area */
+      .upload .drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;border:0;margin:0;padding:0}
+      .controls{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end}
+      .controls .filter-item{display:flex;flex-direction:column;gap:6px}
+      .controls label{color:var(--muted);font-size:12px}
+      .controls select,.controls input,.controls button{background:transparent;border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;height:38px;box-sizing:border-box}
+      /* improve option contrast and set visual styles; note: Chromium may limit option styling */
+      select{background-color:var(--panel-2);color:var(--ink)}
+      select option{background-color:var(--panel-2);color:var(--ink)}
+      select option:checked, select option:hover{background-color:var(--accent);color:#0B121D}
+
+      /* Custom dropdown (fallback for better styling/control) */
+      .custom-select{position:relative;border:1px solid var(--border);border-radius:6px;background:var(--panel-2);padding:6px 8px;cursor:pointer;height:38px;display:flex;align-items:center;justify-content:space-between}
+      .custom-select .selected{color:var(--text);font-size:14px}
+      .custom-select .caret{margin-left:8px;opacity:0.8}
+      .custom-list{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--panel-2);border:1px solid var(--border);max-height:220px;overflow:auto;border-radius:6px;z-index:40;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+      .custom-list li{list-style:none;padding:8px 10px;cursor:pointer;color:var(--ink)}
+      .custom-list li[aria-selected="true"],.custom-list li:hover{background:var(--accent);color:#0B121D}
+      .controls button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;height:38px}
+
+      main{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+      .left{width:100%}
+      .right{width:100%}
+
+      /* Patch panel */
+      .patch{background:linear-gradient(180deg,#0d1824,#0b1621);border:1px solid var(--border);padding:10px;border-radius:8px}
+      .grid{display:grid;grid-template-columns:repeat(16,1fr);gap:6px}
+      .cell{background:#071722;border-radius:4px;padding:8px;text-align:center;font-family:'IBM Plex Mono';font-size:12px;border:1px solid rgba(255,255,255,0.03)}
+      .cell.free{background:linear-gradient(180deg,rgba(37,193,147,0.12),rgba(37,193,147,0.06));color:var(--free);border:1px solid rgba(37,193,147,0.18)}
+      .cell.occupied{background:linear-gradient(180deg,rgba(226,84,63,0.12),rgba(226,84,63,0.06));color:var(--occupied);border:1px solid rgba(226,84,63,0.18)}
+      .cell.nodata{background:linear-gradient(180deg,rgba(62,79,107,0.06),rgba(62,79,107,0.02));color:var(--nodata);border:1px solid rgba(62,79,107,0.08)}
+
+      /* Table */
+      table{width:100%;border-collapse:collapse;background:transparent}
+      th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
+      th{cursor:pointer;font-family:'IBM Plex Mono'}
+      .badge{display:inline-block;padding:6px 8px;border-radius:999px;font-size:12px}
+      .badge.free{background:rgba(37,193,147,0.12);color:var(--free)}
+      .badge.occupied{background:rgba(226,84,63,0.12);color:var(--occupied)}
+      .badge.nodata{background:rgba(62,79,107,0.06);color:var(--nodata)}
+
+      footer{margin-top:12px;color:var(--muted);font-size:13px}
+
+      @media(max-width:800px){.grid{grid-template-columns:repeat(8,1fr)}.right{width:100%}}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="plate">
+        <div>
+          <div class="title">Admin IPs — Patch Panel</div>
+          <div class="subtitle">Gestión local de IPs — carga desde Excel/CSV (navegador)</div>
+        </div>
+      </div>
+
+      <div class="topbar">
+        <div class="upload">
+          <div class="drop" id="dropzone">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <strong id="file-name">Ningún archivo cargado</strong>
+                <div style="color:var(--muted);font-size:12px">Arrastra y suelta o haz click para seleccionar</div>
+              </div>
+            </div>
+            <input id="file-input" type="file" accept=".xlsx,.xls,.csv" />
+            <div style="margin-top:8px"><a id="download-sample" href="#" style="color:var(--accent);text-decoration:underline">Descargar CSV de ejemplo</a></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="filter-item"><label for="filter-state">Estado</label>
+            <div class="custom-select" data-for="filter-state" tabindex="0" role="button" aria-haspopup="listbox">
+              <span class="selected">Todas</span><span class="caret">▾</span>
+            </div>
+            <select id="filter-state" style="display:none"><option value="all">Todas</option><option value="ocupada">Ocupadas</option><option value="libre">Libres</option></select>
+          </div>
+
+          <div class="filter-item"><label for="filter-group">Grupo</label>
+            <div class="custom-select" data-for="filter-group" tabindex="0" role="button" aria-haspopup="listbox">
+              <span class="selected">Todos los grupos</span><span class="caret">▾</span>
+            </div>
+            <select id="filter-group" style="display:none"><option value="">Todos los grupos</option></select>
+          </div>
+
+          <div class="filter-item"><label for="search">Buscar</label><input id="search" placeholder="Buscar IP, nombre, grupo" type="text" /></div>
+          <div class="filter-item"><label for="cidr">CIDR</label><input id="cidr" placeholder="CIDR (ej. 192.168.1.0/24)" type="text" /></div>
+          <div class="filter-item"><label>&nbsp;</label><button id="use-detected">Usar rango detectado</button></div>
+        </div>
+      </div>
+
+      <main>
+        <section id="patch-section">
+          <h2 style="font-family:'IBM Plex Mono'">Mapa de puertos</h2>
+          <div class="patch" id="patch-panel">
+            <div id="patch-content" style="min-height:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px">
+              <div id="patch-empty-message" style="color:var(--muted);text-align:center">Sin datos todavía. Subí un Excel/CSV o ingresá un CIDR manualmente.</div>
+              <div id="map-range" style="color:var(--muted);font-size:13px;margin-top:10px"></div>
+              <div id="grid-container" style="width:100%;margin-top:12px;display:none">
+                <div class="grid" id="grid"></div>
+                <div style="margin-top:8px;color:var(--muted);font-size:13px">Leyenda: <span style="color:var(--free)">● Libre</span> <span style="color:var(--occupied)">● Ocupada</span> <span style="color:var(--nodata)">● Sin datos</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="table-section">
+          <h2 style="font-family:'IBM Plex Mono'">Tabla de IPs</h2>
+          <div style="margin-bottom:10px;display:flex;justify-content:flex-end;align-items:center">
+            <button id="export-csv">Exportar visible</button>
+          </div>
+          <div style="overflow:auto;background:transparent;padding:8px;border-radius:8px;border:1px solid var(--border)">
+            <table id="data-table">
+              <thead>
+                <tr><th data-key="ip">IP</th><th data-key="nombre">Nombre</th><th data-key="grupo">Grupo</th><th data-key="estado">Estado</th><th>Observaciones</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <footer>Todo el procesamiento se realiza localmente en el navegador. No se envían datos a servidores.</footer>
+    </div>
+
+    <!-- SheetJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script>
+      // Utilities
+      function ipToInt(ip){
+        if(!ip) return 0
+        const p = ip.split('.').map(x=>parseInt(x)||0)
+        return ((p[0]<<24)>>>0) + (p[1]<<16) + (p[2]<<8) + p[3]
+      }
+      function intToIp(n){return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.')}
+      function compareIP(a,b){return ipToInt(a)-ipToInt(b)}
+
+      function normalizeRows(json){
+        return json.map(r=>{
+          const out={ip:'',nombre:'',grupo:'',estado:'',observaciones:''}
+          Object.keys(r).forEach(k=>{
+            const v=(r[k]===undefined||r[k]===null)?'':String(r[k]).trim()
+            const key=k.toLowerCase()
+            if(key.includes('ip')) out.ip=v
+            else if(key.includes('nombre')||key.includes('host')||key.includes('machine')||key.includes('name')) out.nombre=v
+            else if(key.includes('grupo')||key.includes('workgroup')||key.includes('domain')) out.grupo=v
+            else if(key.includes('estado')||key.includes('status')||key.includes('state')) out.estado=v
+            else if(key.includes('observ')) out.observaciones=v
+          })
+          return out
+        }).filter(r=>r.ip)
+      }
+
+      function inferState(r){
+        if(r.estado && r.estado.trim()){ const s=r.estado.toLowerCase(); if(s.includes('ocup')||s.includes('used')||s.includes('occu')||s.includes('busy')) return 'ocupada'; if(s.includes('lib')||s.includes('free')||s.includes('avail')) return 'libre'}
+        if(r.nombre && r.nombre.trim()) return 'ocupada'
+        return 'libre'
+      }
+
+      function parseCIDR(cidr){
+        if(!cidr) return null
+        const m=cidr.trim().match(/^(\d+\.\d+\.\d+\.\d+)\/(\d+)$/)
+        if(!m) return null
+        const base=m[1], prefix=parseInt(m[2])
+        const baseInt=ipToInt(base)
+        const mask = prefix===0?0: (~0 << (32-prefix)) >>>0
+        const net = baseInt & mask
+        const start = net
+        const end = (net | (~mask >>>0)) >>>0
+        return {base:intToIp(net),prefix,start,end,mask}
+      }
+
+      function detectMostCommonCIDR(rows){
+        const prefixes={}
+        rows.forEach(r=>{
+          if(!r.ip) return
+          const parts=r.ip.split('.')
+          if(parts.length>=3){ const p=parts[0]+'.'+parts[1]+'.'+parts[2]; prefixes[p]=(prefixes[p]||0)+1 }
+        })
+        const most=Object.entries(prefixes).sort((a,b)=>b[1]-a[1])[0]
+        if(most) return most[0]+'.0/24'
+        return null
+      }
+
+      // App state
+      let ALL_ROWS=[]
+      let VISIBLE_ROWS=[]
+      let sortAsc=true
+      let sortKey='ip'
+      let currentCIDR=''
+
+      // DOM refs
+      const fileInput=document.getElementById('file-input')
+      const dropzone=document.getElementById('dropzone')
+      const fileNameLabel=document.getElementById('file-name')
+      const downloadSample=document.getElementById('download-sample')
+      const filterState=document.getElementById('filter-state')
+      const filterGroup=document.getElementById('filter-group')
+      const customSelects=document.querySelectorAll('.custom-select')
+      const searchInput=document.getElementById('search')
+      const cidrInput=document.getElementById('cidr')
+      const useDetectedBtn=document.getElementById('use-detected')
+      const tbody=document.querySelector('#data-table tbody')
+      const gridEl=document.getElementById('grid')
+      const mapRangeLabel=document.getElementById('map-range')
+      const patchEmptyMessage=document.getElementById('patch-empty-message')
+      const gridContainer=document.getElementById('grid-container')
+
+      // Sample CSV blob generation
+      downloadSample.addEventListener('click', (e)=>{
+        e.preventDefault()
+        const csv='IP,Nombre de máquina,Grupo de trabajo,Estado,Observaciones\n192.168.1.2,SERVER1,OFICINA,ocupada,Servidor principal\n192.168.1.10,PC-ALICE,OFICINA,,\n192.168.1.20,,GASTOS,,Sin uso\n192.168.1.100,PRINTER01,OFICINA,ocupada,Impresora\n'
+        const blob=new Blob([csv],{type:'text/csv'})
+        const url=URL.createObjectURL(blob)
+        const a=document.createElement('a');a.href=url;a.download='sample_ips.csv';a.click();URL.revokeObjectURL(url)
+      })
+
+      // Drag & drop
+      ;['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.style.boxShadow='0 0 0 3px rgba(76,141,255,0.08)'}))
+      ;['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.style.boxShadow='none'}))
+      dropzone.addEventListener('drop',async (e)=>{ const f=e.dataTransfer.files[0]; if(f) await handleFile(f) })
+      fileInput.addEventListener('change',async (e)=>{ const f=e.target.files[0]; if(f) await handleFile(f) })
+
+      // Custom select behavior: open a floating list and sync to hidden select
+      customSelects.forEach(cs=>{
+        const targetId=cs.getAttribute('data-for')
+        const sel=document.getElementById(targetId)
+        cs.addEventListener('click', (e)=>{ toggleCustomList(cs, sel) })
+        cs.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); toggleCustomList(cs, sel) } if(e.key==='ArrowDown'){ openAndFocusFirst(cs, sel) } })
+      })
+
+      function toggleCustomList(cs, sel){
+        // close any other lists
+        document.querySelectorAll('.custom-list').forEach(n=>n.remove())
+        const rect=cs.getBoundingClientRect()
+        const list=document.createElement('ul')
+        list.className='custom-list'
+        list.setAttribute('role','listbox')
+        list.setAttribute('tabindex','-1')
+        const options=Array.from(sel.options)
+        options.forEach((opt,i)=>{
+          const li=document.createElement('li')
+          li.textContent=opt.textContent
+          li.setAttribute('data-value', opt.value)
+          li.setAttribute('role','option')
+          if(sel.value===opt.value) li.setAttribute('aria-selected','true')
+          li.addEventListener('click', ()=>{ sel.value=opt.value; cs.querySelector('.selected').textContent=opt.textContent; list.remove(); sel.dispatchEvent(new Event('change')) })
+          list.appendChild(li)
+        })
+        cs.appendChild(list)
+        list.focus()
+        // keyboard navigation
+        list.addEventListener('keydown', (e)=>{
+          const items=Array.from(list.querySelectorAll('li'))
+          const idx=items.findIndex(it=>it===document.activeElement)
+          if(e.key==='ArrowDown'){ e.preventDefault(); const ni=Math.min(items.length-1, idx+1); items[ni].focus() }
+          else if(e.key==='ArrowUp'){ e.preventDefault(); const ni=Math.max(0, idx-1); items[ni].focus() }
+          else if(e.key==='Enter'){ e.preventDefault(); document.activeElement.click() }
+          else if(e.key==='Escape'){ list.remove() }
+        })
+        // focus first
+        setTimeout(()=>{ const first=list.querySelector('li'); if(first) first.focus() },50)
+      }
+
+      function openAndFocusFirst(cs, sel){ toggleCustomList(cs, sel) }
+
+      async function handleFile(file){
+        fileNameLabel.textContent=file.name
+        const name=file.name.toLowerCase()
+        if(name.endsWith('.csv')){
+          const txt=await file.text()
+          const wb=XLSX.read(txt,{type:'string'})
+          const sheet=wb.Sheets[wb.SheetNames[0]]
+          const json=XLSX.utils.sheet_to_json(sheet,{defval:''})
+          ALL_ROWS=normalizeRows(json)
+        } else {
+          const data=await file.arrayBuffer()
+          const wb=XLSX.read(data,{type:'array'})
+          const sheet=wb.Sheets[wb.SheetNames[0]]
+          const json=XLSX.utils.sheet_to_json(sheet,{defval:''})
+          ALL_ROWS=normalizeRows(json)
+        }
+        // infer estado
+        ALL_ROWS.forEach(r=>r.estado=inferState(r))
+        // update groups
+        populateGroups()
+        applyFilters()
+        // detect cidr
+        const detected=detectMostCommonCIDR(ALL_ROWS)
+        if(detected && !cidrInput.value) cidrInput.value=detected
+      }
+
+      function populateGroups(){
+        const s=new Set(ALL_ROWS.map(r=>r.grupo||'').filter(Boolean))
+        filterGroup.innerHTML=''
+        const opt=document.createElement('option');opt.value='';opt.textContent='Todos los grupos';filterGroup.appendChild(opt)
+        Array.from(s).sort().forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;filterGroup.appendChild(o)})
+      }
+
+      function applyFilters(){
+        const state=filterState.value
+        const group=filterGroup.value
+        const q=searchInput.value.trim().toLowerCase()
+        VISIBLE_ROWS=ALL_ROWS.filter(r=>{
+          if(state!=='all'){ if(state==='ocupada' && r.estado!=='ocupada') return false; if(state==='libre' && r.estado!=='libre') return false }
+          if(group && r.grupo!==group) return false
+          if(q){ if(!(r.ip.includes(q) || (r.nombre||'').toLowerCase().includes(q) || (r.grupo||'').toLowerCase().includes(q))) return false }
+          return true
+        })
+        renderTable()
+        renderGrid()
+      }
+
+      function renderTable(){
+        const rows=[...VISIBLE_ROWS].sort((a,b)=> compareIPValue(a,b))
+        tbody.innerHTML=''
+        rows.forEach(r=>{
+          const tr=document.createElement('tr')
+          tr.innerHTML=`<td style="font-family:'IBM Plex Mono'">${r.ip}</td><td>${r.nombre||''}</td><td>${r.grupo||''}</td><td><span class="badge ${r.estado||'nodata'}">${r.estado||'sin datos'}</span></td><td>${r.observaciones||''}</td>`
+          tbody.appendChild(tr)
+        })
+      }
+
+      function compareIPValue(a,b){
+        if(sortKey==='ip') return sortAsc? compareIP(a.ip,b.ip): -compareIP(a.ip,b.ip)
+        return 0
+      }
+
+      // Sorting header
+      document.querySelectorAll('th[data-key]').forEach(th=>th.addEventListener('click',()=>{
+        const key=th.getAttribute('data-key')
+        if(sortKey===key) sortAsc=!sortAsc
+        else{ sortKey=key; sortAsc=true }
+        renderTable()
+      }))
+
+      // Filters events
+      [filterState,filterGroup,searchInput].forEach(el=>el.addEventListener('input',applyFilters))
+      useDetectedBtn.addEventListener('click',()=>{ const d=detectMostCommonCIDR(ALL_ROWS); if(d){ cidrInput.value=d; currentCIDR=d; renderGrid() } })
+      cidrInput.addEventListener('change',()=>{ currentCIDR=cidrInput.value; renderGrid() })
+
+      function renderGrid(){
+        const useCidr=currentCIDR || cidrInput.value
+        mapRangeLabel.textContent=useCidr||''
+        gridEl.innerHTML=''
+        // show empty state when no CIDR or no data
+        if(!useCidr || ALL_ROWS.length===0){
+          patchEmptyMessage.style.display='block'
+          gridContainer.style.display='none'
+          return
+        }
+        const info=parseCIDR(useCidr)
+        if(!info){ patchEmptyMessage.style.display='block'; gridContainer.style.display='none'; return }
+        const base=info.base.split('.').slice(0,3).join('.')
+        // map states by IP
+        const map={}
+        VISIBLE_ROWS.forEach(r=>{ if(r.ip && r.ip.startsWith(base+'.')) map[r.ip]=r.estado })
+        for(let i=0;i<256;i++){
+          const ip=base+'.'+i
+          const estado=map[ip]||'nodata'
+          const div=document.createElement('div')
+          div.className='cell '+(estado==='ocupada'?'occupied':estado==='libre'?'free':'nodata')
+          div.title=ip+' - '+(estado||'sin datos')
+          div.textContent=String(i).padStart(1,' ')
+          gridEl.appendChild(div)
+        }
+        patchEmptyMessage.style.display='none'
+        gridContainer.style.display='block'
+      }
+
+      // Export visible
+      document.getElementById('export-csv').addEventListener('click',()=>{
+        const cols=['IP','Nombre de máquina','Grupo de trabajo','Estado','Observaciones']
+        const lines=[cols.join(',')]
+        VISIBLE_ROWS.forEach(r=>{
+          const row=[r.ip,`"${(r.nombre||'').replace(/"/g,'""') }"`,`"${(r.grupo||'').replace(/"/g,'""') }"`,r.estado||'',`"${(r.observaciones||'').replace(/"/g,'""') }"`]
+          lines.push(row.join(','))
+        })
+        const blob=new Blob([lines.join('\n')],{type:'text/csv'})
+        const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download='ips_visible.csv';a.click();URL.revokeObjectURL(url)
+      })
+
+      // initial render
+      applyFilters()
+    </script>
+  </body>
+</html>

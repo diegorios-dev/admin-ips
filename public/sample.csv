@@ -1,0 +1,5 @@
+IP,Nombre de máquina,Grupo de trabajo,Estado,Observaciones
+192.168.1.2,SERVER1,OFICINA,ocupada,Servidor principal
+192.168.1.10,PC-ALICE,OFICINA,,
+192.168.1.20,,GASTOS,,Sin uso
+192.168.1.100,PRINTER01,OFICINA,ocupada,Impresora
