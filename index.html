@@ -8,68 +8,159 @@
     <style>
       :root{
         --bg:#0B121D;--panel:#101B2C;--panel-2:#152238;--border:#26344E;
-        --text:#E9EFF9;--muted:#8CA0BE;--accent:#4C8DFF;--ink:var(--text);
-        --free:#25C193;--occupied:#E2543F;--nodata:#3E4F6B;
-        --screw:#223142
+        --text:#E9EFF9;--muted:#8CA0BE;--accent:#4C8DFF;--accent-strong:#5fa1ff;--ink:var(--text);
+        --free:#25C193;--occupied:#E2543F;--nodata:#3E4F6B;--screw:#223142;
+        --soft:#1a2940;--shadow:rgba(7, 16, 26, 0.24)
       }
       html,body{height:100%;}
       body{margin:0;background:linear-gradient(180deg,var(--bg),#07101a);color:var(--text);font-family:'IBM Plex Sans',system-ui,Segoe UI,Arial;}
       .container{max-width:1200px;margin:18px auto;padding:18px}
       /* Plate */
-      .plate{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--border);padding:12px 16px;border-radius:8px;position:relative;display:flex;align-items:center;gap:14px}
+      .plate{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--border);padding:12px 16px;border-radius:12px;position:relative;display:flex;align-items:center;gap:14px;box-shadow:0 14px 30px var(--shadow)}
       .plate:before,.plate:after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:var(--screw);top:8px}
       .plate:before{left:8px}
       .plate:after{right:8px}
       .title{font-family:'IBM Plex Mono';font-weight:600;font-size:18px}
       .subtitle{color:var(--muted);font-size:13px}
 
-      .topbar{display:flex;gap:12px;margin-top:12px;align-items:flex-start}
+      .topbar{display:flex;gap:12px;margin-top:14px;align-items:flex-start}
+      .summary-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+      .summary-card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(76,141,255,0.02));border:1px solid var(--border);border-radius:12px;padding:12px 14px;box-shadow:0 10px 24px rgba(0,0,0,0.12)}
+      .summary-card span{display:block;color:var(--muted);font-size:11px;letter-spacing:0.06em;text-transform:uppercase}
+      .summary-card strong{display:block;margin-top:6px;font-size:28px;line-height:1.1;font-family:'IBM Plex Mono';font-weight:600}
+      .summary-card.total strong{color:#dfe9ff}
+      .summary-card.visible strong{color:#8fc7ff}
+      .summary-card.free strong{color:var(--free)}
+      .summary-card.occupied strong{color:var(--occupied)}
       .upload{flex:0 0 420px}
-      .upload .drop{border:1px dashed var(--border);padding:12px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);position:relative}
+      .upload .drop{border:1px dashed rgba(140,160,190,0.4);padding:12px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(76,141,255,0.02));position:relative;transition:border-color .2s ease, transform .2s ease, box-shadow .2s ease}
+      .upload .drop:hover{border-color:rgba(76,141,255,0.7);transform:translateY(-1px)}
       /* file input covers entire drop area */
       .upload .drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;border:0;margin:0;padding:0}
       .controls{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end}
       .controls .filter-item{display:flex;flex-direction:column;gap:6px}
-      .controls label{color:var(--muted);font-size:12px}
-      .controls select,.controls input,.controls button{background:transparent;border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;height:38px;box-sizing:border-box}
-      /* improve option contrast and set visual styles; note: Chromium may limit option styling */
-      select{background-color:var(--panel-2);color:var(--ink)}
+      .controls label{color:var(--muted);font-size:12px;letter-spacing:0.02em}
+      input, select, textarea {
+        font: inherit;
+      }
+      .controls select,.controls input,.controls button,
+      #editor-ip, #editor-nombre, #editor-grupo, #editor-estado, #editor-observaciones {
+        background:linear-gradient(180deg, rgba(18, 27, 39, 0.95), rgba(12, 21, 31, 0.9));
+        border:1px solid rgba(140,160,190,0.24);
+        color:var(--text);
+        padding:10px 12px;
+        border-radius:10px;
+        height:42px;
+        box-sizing:border-box;
+        transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
+      }
+      .controls input::placeholder,
+      #editor-ip::placeholder, #editor-nombre::placeholder, #editor-grupo::placeholder, #editor-observaciones::placeholder {
+        color:var(--muted);
+      }
+      .controls select,.controls input,
+      #editor-ip, #editor-nombre, #editor-grupo, #editor-estado, #editor-observaciones {
+        outline:none;
+      }
+      .controls select:focus,.controls input:focus,
+      #editor-ip:focus, #editor-nombre:focus, #editor-grupo:focus, #editor-estado:focus, #editor-observaciones:focus {
+        border-color:rgba(92,149,255,0.9);
+        box-shadow:0 0 0 4px rgba(76,141,255,0.18), inset 0 1px 0 rgba(255,255,255,0.03);
+        background:linear-gradient(180deg, rgba(18, 27, 39, 1), rgba(12, 21, 31, 1));
+      }
+      select{background-color:var(--panel-2);color:var(--ink);appearance:auto;-webkit-appearance:menulist;}
       select option{background-color:var(--panel-2);color:var(--ink)}
       select option:checked, select option:hover{background-color:var(--accent);color:#0B121D}
+      .controls select,
+      #editor-estado {
+        background-image:linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+        background-position:calc(100% - 14px) calc(50% - 2px), calc(100% - 9px) calc(50% - 2px);
+        background-size:5px 5px, 5px 5px;
+        background-repeat:no-repeat;
+        appearance:none;
+        -webkit-appearance:none;
+      }
+      button{cursor:pointer;border:none;border-radius:8px;padding:9px 12px;font-weight:600;transition:filter .2s ease, transform .2s ease, background .2s ease}
+      button:hover{filter:brightness(1.04);transform:translateY(-1px)}
+      button:active{transform:translateY(0)}
+      .controls button, #save-ip, #add-ip, #export-csv, #export-xlsx{background:linear-gradient(180deg,var(--accent),var(--accent-strong));color:white;box-shadow:0 8px 18px rgba(76,141,255,0.22)}
+      #cancel-edit{background:transparent;border:1px solid var(--border);color:var(--text);box-shadow:none}
+      #cancel-edit:hover{border-color:rgba(140,160,190,0.6)}
 
-      /* Custom dropdown (fallback for better styling/control) */
-      .custom-select{position:relative;border:1px solid var(--border);border-radius:6px;background:var(--panel-2);padding:6px 8px;cursor:pointer;height:38px;display:flex;align-items:center;justify-content:space-between}
-      .custom-select .selected{color:var(--text);font-size:14px}
-      .custom-select .caret{margin-left:8px;opacity:0.8}
-      .custom-list{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--panel-2);border:1px solid var(--border);max-height:220px;overflow:auto;border-radius:6px;z-index:40;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
-      .custom-list li{list-style:none;padding:8px 10px;cursor:pointer;color:var(--ink)}
-      .custom-list li[aria-selected="true"],.custom-list li:hover{background:var(--accent);color:#0B121D}
-      .controls button{background:var(--accent);color:white;border:none;padding:8px 10px;border-radius:6px;cursor:pointer;height:38px}
-
-      main{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+      main{display:flex;flex-direction:column;gap:16px;margin-top:14px}
       .left{width:100%}
       .right{width:100%}
+      section{display:block}
+      section h2{margin:0 0 10px;font-size:16px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
 
       /* Patch panel */
-      .patch{background:linear-gradient(180deg,#0d1824,#0b1621);border:1px solid var(--border);padding:10px;border-radius:8px}
+      .patch{background:linear-gradient(180deg,#0d1824,#0b1621);border:1px solid var(--border);padding:10px;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
       .grid{display:grid;grid-template-columns:repeat(16,1fr);gap:6px}
-      .cell{background:#071722;border-radius:4px;padding:8px;text-align:center;font-family:'IBM Plex Mono';font-size:12px;border:1px solid rgba(255,255,255,0.03)}
+      .cell{background:#071722;border-radius:6px;padding:8px;text-align:center;font-family:'IBM Plex Mono';font-size:12px;border:1px solid rgba(255,255,255,0.03);transition:transform .15s ease, filter .15s ease}
+      .cell:hover{transform:translateY(-1px);filter:brightness(1.04)}
       .cell.free{background:linear-gradient(180deg,rgba(37,193,147,0.12),rgba(37,193,147,0.06));color:var(--free);border:1px solid rgba(37,193,147,0.18)}
       .cell.occupied{background:linear-gradient(180deg,rgba(226,84,63,0.12),rgba(226,84,63,0.06));color:var(--occupied);border:1px solid rgba(226,84,63,0.18)}
       .cell.nodata{background:linear-gradient(180deg,rgba(62,79,107,0.06),rgba(62,79,107,0.02));color:var(--nodata);border:1px solid rgba(62,79,107,0.08)}
 
       /* Table */
       table{width:100%;border-collapse:collapse;background:transparent}
-      th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
-      th{cursor:pointer;font-family:'IBM Plex Mono'}
-      .badge{display:inline-block;padding:6px 8px;border-radius:999px;font-size:12px}
+      th,td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:left;vertical-align:middle}
+      th{cursor:pointer;font-family:'IBM Plex Mono';color:var(--muted);font-size:12px;letter-spacing:0.04em;text-transform:uppercase}
+      tbody tr{transition:background .2s ease}
+      tbody tr:hover{background:rgba(76,141,255,0.06)}
+      .badge{display:inline-block;padding:6px 8px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:0.02em}
       .badge.free{background:rgba(37,193,147,0.12);color:var(--free)}
       .badge.occupied{background:rgba(226,84,63,0.12);color:var(--occupied)}
       .badge.nodata{background:rgba(62,79,107,0.06);color:var(--nodata)}
+      .row-edit-btn{background:rgba(76,141,255,0.12);color:var(--text);border:1px solid rgba(76,141,255,0.28);padding:6px 10px;border-radius:6px;font-size:12px;box-shadow:none}
+      .editor-panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(76,141,255,0.02));border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,0.12)}
 
       footer{margin-top:12px;color:var(--muted);font-size:13px}
 
-      @media(max-width:800px){.grid{grid-template-columns:repeat(8,1fr)}.right{width:100%}}
+      @media (max-width: 800px){
+        html { font-size: 15px; }
+        .container { padding: 12px; }
+        .plate { padding: 14px 12px; }
+        .topbar { display: block; }
+        .summary-bar { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .upload, .controls { width: 100%; }
+        .upload { margin-bottom: 12px; }
+        .controls { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+        .controls .filter-item { min-width: 0; }
+        .controls .filter-item:last-child { grid-column: 1 / -1; }
+        .controls select, .controls input, .controls button, #editor-ip, #editor-nombre, #editor-grupo, #editor-estado, #editor-observaciones {
+          width: 100%; min-height: 44px; font-size: 14px;
+        }
+        .controls button, #save-ip, #add-ip, #export-csv, #export-xlsx {
+          min-height: 44px; font-size: 14px;
+        }
+        .grid { grid-template-columns: repeat(8, minmax(0,1fr)); gap: 5px; }
+        .cell { font-size: 10px; padding: 7px 4px; }
+        .patch { padding: 8px; }
+        #patch-content { min-height: 160px; }
+        #grid-container { margin-top: 8px; }
+        #data-table { min-width: 640px; }
+      }
+
+      @media (max-width: 520px){
+        body { -webkit-tap-highlight-color: transparent; }
+        .container { padding: 10px; }
+        .title { font-size: 16px; }
+        .subtitle { font-size: 12px; }
+        .summary-bar { grid-template-columns: 1fr 1fr; }
+        .controls { grid-template-columns: 1fr; }
+        .controls .filter-item:last-child { grid-column: auto; }
+        .drop { padding: 12px 10px; }
+        .grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+        .cell { font-size: 9px; padding: 6px 3px; }
+        .editor-panel { padding: 10px; }
+        .editor-panel > div:nth-child(2) { grid-template-columns: 1fr; }
+        .editor-panel > div:first-child { align-items: flex-start; }
+        .editor-panel > div:first-child > div { width: 100%; }
+        #save-ip, #cancel-edit, #add-ip, #export-csv, #export-xlsx { width: 100%; }
+        #table-section .editor-panel > div:first-child { flex-direction: column; align-items: stretch; }
+      }
     </style>
   </head>
   <body>
@@ -97,22 +188,41 @@
 
         <div class="controls">
           <div class="filter-item"><label for="filter-state">Estado</label>
-            <div class="custom-select" data-for="filter-state" tabindex="0" role="button" aria-haspopup="listbox">
-              <span class="selected">Todas</span><span class="caret">▾</span>
-            </div>
-            <select id="filter-state" style="display:none"><option value="all">Todas</option><option value="ocupada">Ocupadas</option><option value="libre">Libres</option></select>
+            <select id="filter-state">
+              <option value="all">Todas</option>
+              <option value="ocupada">Ocupadas</option>
+              <option value="libre">Libres</option>
+            </select>
           </div>
 
           <div class="filter-item"><label for="filter-group">Grupo</label>
-            <div class="custom-select" data-for="filter-group" tabindex="0" role="button" aria-haspopup="listbox">
-              <span class="selected">Todos los grupos</span><span class="caret">▾</span>
-            </div>
-            <select id="filter-group" style="display:none"><option value="">Todos los grupos</option></select>
+            <select id="filter-group">
+              <option value="">Todos los grupos</option>
+            </select>
           </div>
 
           <div class="filter-item"><label for="search">Buscar</label><input id="search" placeholder="Buscar IP, nombre, grupo" type="text" /></div>
           <div class="filter-item"><label for="cidr">CIDR</label><input id="cidr" placeholder="CIDR (ej. 192.168.1.0/24)" type="text" /></div>
           <div class="filter-item"><label>&nbsp;</label><button id="use-detected">Usar rango detectado</button></div>
+        </div>
+      </div>
+
+      <div class="summary-bar" aria-label="Resumen de IPs">
+        <div class="summary-card total">
+          <span>Total</span>
+          <strong id="summary-total">0</strong>
+        </div>
+        <div class="summary-card visible">
+          <span>Visibles</span>
+          <strong id="summary-visible">0</strong>
+        </div>
+        <div class="summary-card free">
+          <span>Libres</span>
+          <strong id="summary-free">0</strong>
+        </div>
+        <div class="summary-card occupied">
+          <span>Ocupadas</span>
+          <strong id="summary-occupied">0</strong>
         </div>
       </div>
 
@@ -123,6 +233,16 @@
             <div id="patch-content" style="min-height:200px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px">
               <div id="patch-empty-message" style="color:var(--muted);text-align:center">Sin datos todavía. Subí un Excel/CSV o ingresá un CIDR manualmente.</div>
               <div id="map-range" style="color:var(--muted);font-size:13px;margin-top:10px"></div>
+              <div id="selected-ip-panel" style="display:none; margin-top:12px; width:100%; background:rgba(13,20,30,0.7); border:1px solid var(--border); border-radius:10px; padding:10px 12px; color:var(--text);">
+                <div style="color:var(--muted); font-size:11px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px;">IP seleccionada</div>
+                <div id="selected-ip-value" style="font-family:'IBM Plex Mono'; font-size:18px; font-weight:600;">-</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-top:10px;">
+                  <div><div style="color:var(--muted); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:3px;">Nombre</div><div id="selected-ip-name" style="font-size:14px;">-</div></div>
+                  <div><div style="color:var(--muted); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:3px;">Grupo</div><div id="selected-ip-group" style="font-size:14px;">-</div></div>
+                  <div><div style="color:var(--muted); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:3px;">Estado</div><div id="selected-ip-state" style="font-size:14px;">-</div></div>
+                  <div style="grid-column:1 / -1;"><div style="color:var(--muted); font-size:11px; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:3px;">Observaciones</div><div id="selected-ip-observations" style="font-size:14px;">-</div></div>
+                </div>
+              </div>
               <div id="grid-container" style="width:100%;margin-top:12px;display:none">
                 <div class="grid" id="grid"></div>
                 <div style="margin-top:8px;color:var(--muted);font-size:13px">Leyenda: <span style="color:var(--free)">● Libre</span> <span style="color:var(--occupied)">● Ocupada</span> <span style="color:var(--nodata)">● Sin datos</span></div>
@@ -133,13 +253,37 @@
 
         <section id="table-section">
           <h2 style="font-family:'IBM Plex Mono'">Tabla de IPs</h2>
-          <div style="margin-bottom:10px;display:flex;justify-content:flex-end;align-items:center">
-            <button id="export-csv">Exportar visible</button>
+
+          <div class="editor-panel" style="margin-bottom:12px;padding:12px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.02)">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+              <strong id="editor-title">Agregar IP</strong>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="save-ip" type="button">Guardar</button>
+                <button id="cancel-edit" type="button" style="background:transparent;border:1px solid var(--border);color:var(--text)">Cancelar</button>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+              <input id="editor-ip" class="modern-field" placeholder="IP" />
+              <input id="editor-nombre" class="modern-field" placeholder="Nombre de máquina" />
+              <input id="editor-grupo" class="modern-field" placeholder="Grupo" />
+              <select id="editor-estado" class="modern-field">
+                <option value="">Sin estado</option>
+                <option value="ocupada">Ocupada</option>
+                <option value="libre">Libre</option>
+              </select>
+              <input id="editor-observaciones" class="modern-field" placeholder="Observaciones" />
+            </div>
+          </div>
+
+          <div style="margin-bottom:10px;display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap">
+            <button id="add-ip" type="button">Agregar IP</button>
+            <button id="export-csv" type="button">Exportar visible (.csv)</button>
+            <button id="export-xlsx" type="button">Exportar visible (.xlsx)</button>
           </div>
           <div style="overflow:auto;background:transparent;padding:8px;border-radius:8px;border:1px solid var(--border)">
             <table id="data-table">
               <thead>
-                <tr><th data-key="ip">IP</th><th data-key="nombre">Nombre</th><th data-key="grupo">Grupo</th><th data-key="estado">Estado</th><th>Observaciones</th></tr>
+                <tr><th data-key="ip">IP</th><th data-key="nombre">Nombre</th><th data-key="grupo">Grupo</th><th data-key="estado">Estado</th><th>Observaciones</th><th>Acciones</th></tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -223,15 +367,30 @@
       const downloadSample=document.getElementById('download-sample')
       const filterState=document.getElementById('filter-state')
       const filterGroup=document.getElementById('filter-group')
-      const customSelects=document.querySelectorAll('.custom-select')
       const searchInput=document.getElementById('search')
       const cidrInput=document.getElementById('cidr')
       const useDetectedBtn=document.getElementById('use-detected')
+      const addIpBtn=document.getElementById('add-ip')
+      const saveIpBtn=document.getElementById('save-ip')
+      const cancelEditBtn=document.getElementById('cancel-edit')
+      const editorTitle=document.getElementById('editor-title')
+      const editorIp=document.getElementById('editor-ip')
+      const editorNombre=document.getElementById('editor-nombre')
+      const editorGrupo=document.getElementById('editor-grupo')
+      const editorEstado=document.getElementById('editor-estado')
+      const editorObservaciones=document.getElementById('editor-observaciones')
       const tbody=document.querySelector('#data-table tbody')
       const gridEl=document.getElementById('grid')
       const mapRangeLabel=document.getElementById('map-range')
       const patchEmptyMessage=document.getElementById('patch-empty-message')
       const gridContainer=document.getElementById('grid-container')
+      const selectedIpPanel=document.getElementById('selected-ip-panel')
+      const selectedIpValue=document.getElementById('selected-ip-value')
+      const selectedIpName=document.getElementById('selected-ip-name')
+      const selectedIpGroup=document.getElementById('selected-ip-group')
+      const selectedIpState=document.getElementById('selected-ip-state')
+      const selectedIpObservations=document.getElementById('selected-ip-observations')
+      let editingRowIndex=null
 
       // Sample CSV blob generation
       downloadSample.addEventListener('click', (e)=>{
@@ -247,49 +406,6 @@
       ;['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.style.boxShadow='none'}))
       dropzone.addEventListener('drop',async (e)=>{ const f=e.dataTransfer.files[0]; if(f) await handleFile(f) })
       fileInput.addEventListener('change',async (e)=>{ const f=e.target.files[0]; if(f) await handleFile(f) })
-
-      // Custom select behavior: open a floating list and sync to hidden select
-      customSelects.forEach(cs=>{
-        const targetId=cs.getAttribute('data-for')
-        const sel=document.getElementById(targetId)
-        cs.addEventListener('click', (e)=>{ toggleCustomList(cs, sel) })
-        cs.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); toggleCustomList(cs, sel) } if(e.key==='ArrowDown'){ openAndFocusFirst(cs, sel) } })
-      })
-
-      function toggleCustomList(cs, sel){
-        // close any other lists
-        document.querySelectorAll('.custom-list').forEach(n=>n.remove())
-        const rect=cs.getBoundingClientRect()
-        const list=document.createElement('ul')
-        list.className='custom-list'
-        list.setAttribute('role','listbox')
-        list.setAttribute('tabindex','-1')
-        const options=Array.from(sel.options)
-        options.forEach((opt,i)=>{
-          const li=document.createElement('li')
-          li.textContent=opt.textContent
-          li.setAttribute('data-value', opt.value)
-          li.setAttribute('role','option')
-          if(sel.value===opt.value) li.setAttribute('aria-selected','true')
-          li.addEventListener('click', ()=>{ sel.value=opt.value; cs.querySelector('.selected').textContent=opt.textContent; list.remove(); sel.dispatchEvent(new Event('change')) })
-          list.appendChild(li)
-        })
-        cs.appendChild(list)
-        list.focus()
-        // keyboard navigation
-        list.addEventListener('keydown', (e)=>{
-          const items=Array.from(list.querySelectorAll('li'))
-          const idx=items.findIndex(it=>it===document.activeElement)
-          if(e.key==='ArrowDown'){ e.preventDefault(); const ni=Math.min(items.length-1, idx+1); items[ni].focus() }
-          else if(e.key==='ArrowUp'){ e.preventDefault(); const ni=Math.max(0, idx-1); items[ni].focus() }
-          else if(e.key==='Enter'){ e.preventDefault(); document.activeElement.click() }
-          else if(e.key==='Escape'){ list.remove() }
-        })
-        // focus first
-        setTimeout(()=>{ const first=list.querySelector('li'); if(first) first.focus() },50)
-      }
-
-      function openAndFocusFirst(cs, sel){ toggleCustomList(cs, sel) }
 
       async function handleFile(file){
         fileNameLabel.textContent=file.name
@@ -311,10 +427,15 @@
         ALL_ROWS.forEach(r=>r.estado=inferState(r))
         // update groups
         populateGroups()
-        applyFilters()
-        // detect cidr
         const detected=detectMostCommonCIDR(ALL_ROWS)
-        if(detected && !cidrInput.value) cidrInput.value=detected
+        if (detected) {
+          currentCIDR=detected
+          cidrInput.value=detected
+        } else {
+          currentCIDR = cidrInput.value.trim()
+        }
+        applyFilters()
+        renderGrid()
       }
 
       function populateGroups(){
@@ -322,6 +443,18 @@
         filterGroup.innerHTML=''
         const opt=document.createElement('option');opt.value='';opt.textContent='Todos los grupos';filterGroup.appendChild(opt)
         Array.from(s).sort().forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;filterGroup.appendChild(o)})
+      }
+
+      function updateSummaryStats(){
+        const total = ALL_ROWS.length
+        const visible = VISIBLE_ROWS.length
+        const libres = VISIBLE_ROWS.filter(r => String(r.estado || '').toLowerCase() === 'libre').length
+        const ocupadas = VISIBLE_ROWS.filter(r => String(r.estado || '').toLowerCase() === 'ocupada').length
+
+        document.getElementById('summary-total').textContent = total
+        document.getElementById('summary-visible').textContent = visible
+        document.getElementById('summary-free').textContent = libres
+        document.getElementById('summary-occupied').textContent = ocupadas
       }
 
       function applyFilters(){
@@ -334,8 +467,56 @@
           if(q){ if(!(r.ip.includes(q) || (r.nombre||'').toLowerCase().includes(q) || (r.grupo||'').toLowerCase().includes(q))) return false }
           return true
         })
+        updateSummaryStats()
         renderTable()
         renderGrid()
+      }
+
+      function resetEditor(){
+        editingRowIndex=null
+        editorTitle.textContent='Agregar IP'
+        editorIp.value=''
+        editorNombre.value=''
+        editorGrupo.value=''
+        editorEstado.value=''
+        editorObservaciones.value=''
+      }
+
+      function fillEditorFromRow(rowIndex){
+        const row = ALL_ROWS[rowIndex]
+        if (!row) return
+        editingRowIndex=rowIndex
+        editorTitle.textContent='Editar IP'
+        editorIp.value=row.ip||''
+        editorNombre.value=row.nombre||''
+        editorGrupo.value=row.grupo||''
+        editorEstado.value=row.estado||''
+        editorObservaciones.value=row.observaciones||''
+      }
+
+      function saveEditor(){
+        const ip = (editorIp.value || '').trim()
+        if (!ip) {
+          alert('La IP es obligatoria.')
+          return
+        }
+
+        const payload = {
+          ip,
+          nombre: (editorNombre.value || '').trim(),
+          grupo: (editorGrupo.value || '').trim(),
+          estado: (editorEstado.value || '').trim(),
+          observaciones: (editorObservaciones.value || '').trim()
+        }
+
+        if (editingRowIndex === null) {
+          ALL_ROWS.push(payload)
+        } else {
+          ALL_ROWS[editingRowIndex] = { ...ALL_ROWS[editingRowIndex], ...payload }
+        }
+
+        resetEditor()
+        applyFilters()
       }
 
       function renderTable(){
@@ -343,7 +524,11 @@
         tbody.innerHTML=''
         rows.forEach(r=>{
           const tr=document.createElement('tr')
-          tr.innerHTML=`<td style="font-family:'IBM Plex Mono'">${r.ip}</td><td>${r.nombre||''}</td><td>${r.grupo||''}</td><td><span class="badge ${r.estado||'nodata'}">${r.estado||'sin datos'}</span></td><td>${r.observaciones||''}</td>`
+          const rowIndex=ALL_ROWS.indexOf(r)
+          tr.dataset.rowIndex=String(rowIndex)
+          tr.innerHTML=`<td style="font-family:'IBM Plex Mono'">${r.ip}</td><td>${r.nombre||''}</td><td>${r.grupo||''}</td><td><span class="badge ${r.estado||'nodata'}">${r.estado||'sin datos'}</span></td><td>${r.observaciones||''}</td><td><button type="button" data-edit-index="${rowIndex}" class="row-edit-btn">Editar</button></td>`
+          const editBtn = tr.querySelector('.row-edit-btn')
+          editBtn.addEventListener('click', ()=> fillEditorFromRow(Number(editBtn.dataset.editIndex)))
           tbody.appendChild(tr)
         })
       }
@@ -361,15 +546,43 @@
         renderTable()
       }))
 
+      addIpBtn.addEventListener('click', ()=> {
+        resetEditor()
+        editorIp.focus()
+      })
+      saveIpBtn.addEventListener('click', saveEditor)
+      cancelEditBtn.addEventListener('click', resetEditor)
+
       // Filters events
-      [filterState,filterGroup,searchInput].forEach(el=>el.addEventListener('input',applyFilters))
-      useDetectedBtn.addEventListener('click',()=>{ const d=detectMostCommonCIDR(ALL_ROWS); if(d){ cidrInput.value=d; currentCIDR=d; renderGrid() } })
-      cidrInput.addEventListener('change',()=>{ currentCIDR=cidrInput.value; renderGrid() })
+      if (filterState) {
+        filterState.addEventListener('input', applyFilters)
+        filterState.addEventListener('change', applyFilters)
+      }
+      if (filterGroup) {
+        filterGroup.addEventListener('input', applyFilters)
+        filterGroup.addEventListener('change', applyFilters)
+      }
+      if (searchInput) {
+        searchInput.addEventListener('input', applyFilters)
+      }
+      if (useDetectedBtn) {
+        useDetectedBtn.addEventListener('click',()=>{ const d=detectMostCommonCIDR(ALL_ROWS); if(d){ cidrInput.value=d; currentCIDR=d; renderGrid() } })
+      }
+      if (cidrInput) {
+        cidrInput.addEventListener('change',()=>{ currentCIDR=cidrInput.value; renderGrid() })
+      }
 
       function renderGrid(){
-        const useCidr=currentCIDR || cidrInput.value
+        const useCidr=(currentCIDR || cidrInput.value || '').trim()
+        currentCIDR = useCidr
         mapRangeLabel.textContent=useCidr||''
         gridEl.innerHTML=''
+        selectedIpPanel.style.display='none'
+        selectedIpValue.textContent='-'
+        selectedIpName.textContent='-'
+        selectedIpGroup.textContent='-'
+        selectedIpState.textContent='-'
+        selectedIpObservations.textContent='-'
         // show empty state when no CIDR or no data
         if(!useCidr || ALL_ROWS.length===0){
           patchEmptyMessage.style.display='block'
@@ -389,6 +602,19 @@
           div.className='cell '+(estado==='ocupada'?'occupied':estado==='libre'?'free':'nodata')
           div.title=ip+' - '+(estado||'sin datos')
           div.textContent=String(i).padStart(1,' ')
+          div.addEventListener('click', () => {
+            const row = ALL_ROWS.find(r => r.ip === ip)
+            const stateText = row && row.estado ? row.estado : (estado === 'nodata' ? 'sin datos' : estado)
+            const nameText = row && row.nombre ? row.nombre : 'Sin nombre'
+            const groupText = row && row.grupo ? row.grupo : 'Sin grupo'
+            const observationsText = row && row.observaciones ? row.observaciones : 'Sin observaciones'
+            selectedIpValue.textContent = ip
+            selectedIpName.textContent = nameText
+            selectedIpGroup.textContent = groupText
+            selectedIpState.textContent = stateText
+            selectedIpObservations.textContent = observationsText
+            selectedIpPanel.style.display = 'block'
+          })
           gridEl.appendChild(div)
         }
         patchEmptyMessage.style.display='none'
@@ -407,7 +633,26 @@
         const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download='ips_visible.csv';a.click();URL.revokeObjectURL(url)
       })
 
+      document.getElementById('export-xlsx').addEventListener('click',()=>{
+        if (!VISIBLE_ROWS.length) {
+          alert('No hay filas visibles para exportar.')
+          return
+        }
+        const rowsForExport = VISIBLE_ROWS.map(r => ({
+          IP: r.ip || '',
+          'Nombre de máquina': r.nombre || '',
+          'Grupo de trabajo': r.grupo || '',
+          Estado: r.estado || '',
+          Observaciones: r.observaciones || ''
+        }))
+        const ws = XLSX.utils.json_to_sheet(rowsForExport)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, 'IPs')
+        XLSX.writeFile(wb, 'ips_visible.xlsx')
+      })
+
       // initial render
+      resetEditor()
       applyFilters()
     </script>
   </body>

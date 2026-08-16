@@ -28,10 +28,13 @@ export default function FileLoader({ onLoad }) {
 
   return (
     <div className="fileloader">
-      <label className="btn">Subir .xlsx / .csv
+      <label className="btn btn--primary">
+        Subir .xlsx / .csv
         <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} />
       </label>
-      <a className="btn" href="/sample.csv" download>Descargar sample.csv</a>
+      <a className="btn btn--success" href="/sample.csv" download>
+        Descargar sample.csv
+      </a>
     </div>
   )
 }

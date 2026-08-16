@@ -9,7 +9,11 @@ function ExportButton({ rows }) {
     XLSX.utils.book_append_sheet(wb, ws, 'IPs')
     XLSX.writeFile(wb, 'ips_export.xlsx')
   }
-  return <button onClick={doExport}>Exportar visible</button>
+  return (
+    <button className="btn btn--secondary" onClick={doExport}>
+      Exportar visible
+    </button>
+  )
 }
 
 export default function IPTable({ rows, allRows }) {

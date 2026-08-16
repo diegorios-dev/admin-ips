@@ -42,7 +42,9 @@ export default function IPGridMap({ rows, cidr, rowsAll, setCidr }) {
   if (!useCidr) return (
     <div className="ipgrid empty">
       <p>No se detecta un rango. Carga datos o ingresa CIDR manualmente (ej. 192.168.1.0/24).</p>
-      <button onClick={()=>setCidr(detected)}>Usar rango detectado</button>
+      <button className="btn btn--warning" onClick={()=>setCidr(detected)}>
+        Usar rango detectado
+      </button>
     </div>
   )
 
